@@ -1,8 +1,8 @@
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import {
-  Alert,
   Image,
   Platform,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -17,22 +17,10 @@ import ActionButton from "../components/ActionButton.jsx";
 import { journeyCards, marketRates, openingStats, trustHighlights } from "../data/homeContent";
 import { colors } from "../theme/colors";
 
-const unavailableFlowMessage =
-  "Secure onboarding must connect to the authenticated GoldWallah backend before KYC, listings, bids, or jeweller verification are enabled.";
-
-export default function HomeScreen() {
+export default function HomeScreen({ onLoginPress, onRegisterPress }) {
   const { width } = useWindowDimensions();
   const isWide = width >= 900;
   const isCompact = width < 430;
-
-  const showProtectedFlowNotice = useCallback(() => {
-    if (Platform.OS === "web" && typeof window !== "undefined") {
-      window.alert(unavailableFlowMessage);
-      return;
-    }
-
-    Alert.alert("Protected flow required", unavailableFlowMessage);
-  }, []);
 
   const layout = useMemo(
     () => ({
@@ -69,6 +57,9 @@ export default function HomeScreen() {
           <View style={styles.headerPill}>
             <Text style={styles.headerPillText}>KYC first</Text>
           </View>
+          <Pressable accessibilityRole="button" onPress={onLoginPress} style={styles.signInButton}>
+            <Text style={styles.signInText}>Sign in</Text>
+          </Pressable>
         </View>
 
         <View style={layout.hero}>
@@ -83,8 +74,8 @@ export default function HomeScreen() {
             </Text>
 
             <View style={layout.actions}>
-              <ActionButton onPress={showProtectedFlowNotice}>Sell your gold</ActionButton>
-              <ActionButton variant="secondary" onPress={showProtectedFlowNotice}>
+              <ActionButton onPress={() => onRegisterPress("seller")}>Sell your gold</ActionButton>
+              <ActionButton variant="secondary" onPress={() => onRegisterPress("jeweller")}>
                 Join as jeweller
               </ActionButton>
             </View>
@@ -111,7 +102,7 @@ export default function HomeScreen() {
         <View style={styles.ratePanel}>
           <View style={styles.rateHeader}>
             <View>
-              <Text style={styles.rateEyebrow}>24K reference · INR / gram</Text>
+              <Text style={styles.rateEyebrow}>24K reference - INR / gram</Text>
               <Text style={styles.rateValue}>INR 7,850</Text>
             </View>
             <View style={styles.rateBadge}>
@@ -227,6 +218,20 @@ const styles = StyleSheet.create({
   headerPillText: {
     color: colors.emerald,
     fontSize: 12,
+    fontWeight: "900"
+  },
+  signInButton: {
+    minHeight: 40,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.emerald,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16
+  },
+  signInText: {
+    color: colors.emerald,
+    fontSize: 13,
     fontWeight: "900"
   },
   hero: {
