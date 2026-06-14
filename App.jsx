@@ -13,6 +13,7 @@ const ROUTES = {
 
 export default function App() {
   const [route, setRoute] = useState({ name: ROUTES.home, params: {} });
+  const [session, setSession] = useState({ user: null, accessToken: null });
 
   const showHome = useCallback(() => {
     setRoute({ name: ROUTES.home, params: {} });
@@ -26,10 +27,19 @@ export default function App() {
     setRoute({ name: ROUTES.register, params: { role } });
   }, []);
 
+  const handleAuthenticated = useCallback((nextSession) => {
+    setSession({
+      user: nextSession.user,
+      accessToken: nextSession.accessToken
+    });
+    setRoute({ name: ROUTES.home, params: {} });
+  }, []);
+
   const renderScreen = () => {
     if (route.name === ROUTES.login) {
       return (
         <LoginScreen
+          onAuthenticated={handleAuthenticated}
           onBack={showHome}
           onRegisterPress={showRegister}
         />
@@ -40,6 +50,7 @@ export default function App() {
       return (
         <RegisterScreen
           initialRole={route.params.role}
+          onAuthenticated={handleAuthenticated}
           onBack={showHome}
           onLoginPress={showLogin}
         />
@@ -50,6 +61,7 @@ export default function App() {
       <HomeScreen
         onLoginPress={showLogin}
         onRegisterPress={showRegister}
+        session={session}
       />
     );
   };

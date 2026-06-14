@@ -17,10 +17,11 @@ import ActionButton from "../components/ActionButton.jsx";
 import { journeyCards, marketRates, openingStats, trustHighlights } from "../data/homeContent";
 import { colors } from "../theme/colors";
 
-export default function HomeScreen({ onLoginPress, onRegisterPress }) {
+export default function HomeScreen({ onLoginPress, onRegisterPress, session }) {
   const { width } = useWindowDimensions();
   const isWide = width >= 900;
   const isCompact = width < 430;
+  const isAuthenticated = Boolean(session?.user && session?.accessToken);
 
   const layout = useMemo(
     () => ({
@@ -55,11 +56,13 @@ export default function HomeScreen({ onLoginPress, onRegisterPress }) {
           </View>
 
           <View style={styles.headerPill}>
-            <Text style={styles.headerPillText}>KYC first</Text>
+            <Text style={styles.headerPillText}>{isAuthenticated ? "Signed in" : "KYC first"}</Text>
           </View>
-          <Pressable accessibilityRole="button" onPress={onLoginPress} style={styles.signInButton}>
-            <Text style={styles.signInText}>Sign in</Text>
-          </Pressable>
+          {isAuthenticated ? null : (
+            <Pressable accessibilityRole="button" onPress={onLoginPress} style={styles.signInButton}>
+              <Text style={styles.signInText}>Sign in</Text>
+            </Pressable>
+          )}
         </View>
 
         <View style={layout.hero}>

@@ -7,6 +7,7 @@ import AuthShell from "../components/auth/AuthShell.jsx";
 import AuthTextField from "../components/auth/AuthTextField.jsx";
 import PasswordField from "../components/auth/PasswordField.jsx";
 import { AUTH_METHODS, authMethodOptions } from "../constants/auth";
+import { loginUser, sendLoginOtp, verifyLoginOtp } from "../services/authService";
 import { colors } from "../theme/colors";
 import { validateLoginEmail, validateLoginOtp } from "../utils/authValidation";
 
@@ -21,31 +22,69 @@ const initialOtpValues = {
   otpRequested: false
 };
 
-export default function LoginScreen({ onBack, onRegisterPress }) {
+export default function LoginScreen({ onAuthenticated, onBack, onRegisterPress }) {
   const [activeMethod, setActiveMethod] = useState(AUTH_METHODS.email);
   const [emailValues, setEmailValues] = useState(initialEmailValues);
   const [otpValues, setOtpValues] = useState(initialOtpValues);
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const [statusTone, setStatusTone] = useState("info");
 
   const clearFeedback = useCallback(() => {
     setErrors({});
     setStatusMessage("");
+    setStatusTone("info");
   }, []);
 
   const updateEmailField = useCallback((field, value) => {
     setEmailValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: "" }));
     setStatusMessage("");
+    setStatusTone("info");
   }, []);
 
   const updateOtpField = useCallback((field, value) => {
     setOtpValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: "" }));
     setStatusMessage("");
+    setStatusTone("info");
   }, []);
 
-  const handleEmailSubmit = useCallback(() => {
+  const submitRequest = useCallback(
+    async (action, successMessage) => {
+      if (isSubmitting) {
+        return false;
+      }
+
+      setIsSubmitting(true);
+      setStatusMessage("");
+      setStatusTone("info");
+
+      try {
+        const result = await action();
+        const user = result?.data?.user || null;
+        const accessToken = result?.data?.accessToken || null;
+
+        if (user && accessToken) {
+          onAuthenticated?.({ user, accessToken });
+          return true;
+        }
+
+        setStatusMessage(successMessage);
+        return true;
+      } catch (error) {
+        setStatusTone("error");
+        setStatusMessage(error.message || "Unable to complete request. Please try again.");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [isSubmitting, onAuthenticated]
+  );
+
+  const handleEmailSubmit = useCallback(async () => {
     const nextErrors = validateLoginEmail(emailValues);
     setErrors(nextErrors);
 
@@ -54,12 +93,17 @@ export default function LoginScreen({ onBack, onRegisterPress }) {
       return;
     }
 
-    setStatusMessage(
-      "Connect the authenticated backend before enabling email sign-in. No credentials were sent."
+    await submitRequest(
+      () =>
+        loginUser({
+          email: emailValues.email.trim(),
+          password: emailValues.password
+        }),
+      "Login successful."
     );
-  }, [emailValues]);
+  }, [emailValues, submitRequest]);
 
-  const handleOtpSubmit = useCallback(() => {
+  const handleOtpSubmit = useCallback(async () => {
     const nextErrors = validateLoginOtp(otpValues);
     setErrors(nextErrors);
 
@@ -69,17 +113,27 @@ export default function LoginScreen({ onBack, onRegisterPress }) {
     }
 
     if (!otpValues.otpRequested) {
-      setOtpValues((current) => ({ ...current, otpRequested: true }));
-      setStatusMessage(
-        "Connect the backend OTP endpoint before sending login codes. No OTP was sent."
+      const wasOtpSent = await submitRequest(
+        () => sendLoginOtp({ phone: otpValues.phone.trim() }),
+        "OTP request sent if an account exists for this phone."
       );
+
+      if (wasOtpSent) {
+        setOtpValues((current) => ({ ...current, otp: "", otpRequested: true }));
+      }
+
       return;
     }
 
-    setStatusMessage(
-      "Connect the backend OTP verification endpoint before enabling mobile sign-in."
+    await submitRequest(
+      () =>
+        verifyLoginOtp({
+          phone: otpValues.phone.trim(),
+          otp: otpValues.otp.trim()
+        }),
+      "OTP verified."
     );
-  }, [otpValues]);
+  }, [otpValues, submitRequest]);
 
   return (
     <AuthShell
@@ -102,6 +156,10 @@ export default function LoginScreen({ onBack, onRegisterPress }) {
         activeMethod={activeMethod}
         methods={authMethodOptions}
         onChange={(method) => {
+          if (isSubmitting) {
+            return;
+          }
+
           setActiveMethod(method);
           clearFeedback();
         }}
@@ -131,7 +189,9 @@ export default function LoginScreen({ onBack, onRegisterPress }) {
           <Pressable accessibilityRole="button" style={styles.forgotButton}>
             <Text style={styles.inlineLink}>Forgot password?</Text>
           </Pressable>
-          <SubmitButton onPress={handleEmailSubmit}>Sign in</SubmitButton>
+          <SubmitButton disabled={isSubmitting} onPress={handleEmailSubmit}>
+            {isSubmitting ? "Signing in..." : "Sign in"}
+          </SubmitButton>
         </View>
       ) : (
         <View style={styles.formGroup}>
@@ -145,6 +205,7 @@ export default function LoginScreen({ onBack, onRegisterPress }) {
             placeholder="+91 98765 43210"
             textContentType="telephoneNumber"
             value={otpValues.phone}
+            editable={!isSubmitting && !otpValues.otpRequested}
           />
           {otpValues.otpRequested ? (
             <AuthTextField
@@ -158,16 +219,17 @@ export default function LoginScreen({ onBack, onRegisterPress }) {
               placeholder="Enter OTP"
               textContentType="oneTimeCode"
               value={otpValues.otp}
+              editable={!isSubmitting}
             />
           ) : null}
-          <SubmitButton onPress={handleOtpSubmit}>
-            {otpValues.otpRequested ? "Verify OTP" : "Send OTP"}
+          <SubmitButton disabled={isSubmitting} onPress={handleOtpSubmit}>
+            {isSubmitting ? "Please wait..." : otpValues.otpRequested ? "Verify OTP" : "Send OTP"}
           </SubmitButton>
         </View>
       )}
 
       <SocialAuthSection mode="login" />
-      <AuthNotice>{statusMessage}</AuthNotice>
+      <AuthNotice tone={statusTone}>{statusMessage}</AuthNotice>
     </AuthShell>
   );
 }
@@ -202,9 +264,15 @@ function DisabledSocialButton({ label }) {
   );
 }
 
-function SubmitButton({ children, onPress }) {
+function SubmitButton({ children, disabled = false, onPress }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.submitButton}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={[styles.submitButton, disabled ? styles.submitButtonDisabled : null]}
+    >
       <Text style={styles.submitText}>{children}</Text>
     </Pressable>
   );
@@ -233,6 +301,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.emerald,
     paddingHorizontal: 20,
     paddingVertical: 14
+  },
+  submitButtonDisabled: {
+    opacity: 0.7
   },
   submitText: {
     color: colors.background,

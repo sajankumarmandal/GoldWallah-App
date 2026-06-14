@@ -13,6 +13,7 @@ import {
   DEFAULT_AUTH_ROLE,
   normalizeAuthRole
 } from "../constants/auth";
+import { registerUser, sendRegisterOtp, verifyRegisterOtp } from "../services/authService";
 import { colors } from "../theme/colors";
 import { validateRegisterEmail, validateRegisterOtp } from "../utils/authValidation";
 
@@ -28,18 +29,26 @@ const initialValues = {
   acceptTerms: false
 };
 
-export default function RegisterScreen({ initialRole = DEFAULT_AUTH_ROLE, onBack, onLoginPress }) {
+export default function RegisterScreen({
+  initialRole = DEFAULT_AUTH_ROLE,
+  onAuthenticated,
+  onBack,
+  onLoginPress
+}) {
   const [activeMethod, setActiveMethod] = useState(AUTH_METHODS.email);
   const [values, setValues] = useState({
     ...initialValues,
     role: normalizeAuthRole(initialRole) || DEFAULT_AUTH_ROLE
   });
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const [statusTone, setStatusTone] = useState("info");
 
   const clearFeedback = useCallback(() => {
     setErrors({});
     setStatusMessage("");
+    setStatusTone("info");
   }, []);
 
   const updateField = useCallback((field, value) => {
@@ -48,9 +57,43 @@ export default function RegisterScreen({ initialRole = DEFAULT_AUTH_ROLE, onBack
     setValues((current) => ({ ...current, [field]: nextValue }));
     setErrors((current) => ({ ...current, [field]: "" }));
     setStatusMessage("");
+    setStatusTone("info");
   }, []);
 
-  const handleEmailRegister = useCallback(() => {
+  const submitRequest = useCallback(
+    async (action, successMessage) => {
+      if (isSubmitting) {
+        return false;
+      }
+
+      setIsSubmitting(true);
+      setStatusMessage("");
+      setStatusTone("info");
+
+      try {
+        const result = await action();
+        const user = result?.data?.user || null;
+        const accessToken = result?.data?.accessToken || null;
+
+        if (user && accessToken) {
+          onAuthenticated?.({ user, accessToken });
+          return true;
+        }
+
+        setStatusMessage(successMessage);
+        return true;
+      } catch (error) {
+        setStatusTone("error");
+        setStatusMessage(error.message || "Unable to complete request. Please try again.");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [isSubmitting, onAuthenticated]
+  );
+
+  const handleEmailRegister = useCallback(async () => {
     const nextErrors = validateRegisterEmail(values);
     setErrors(nextErrors);
 
@@ -59,12 +102,20 @@ export default function RegisterScreen({ initialRole = DEFAULT_AUTH_ROLE, onBack
       return;
     }
 
-    setStatusMessage(
-      "Connect the authenticated registration API before creating accounts. No data was sent."
+    await submitRequest(
+      () =>
+        registerUser({
+          fullName: values.fullName.trim(),
+          email: values.email.trim(),
+          phone: values.phone.trim(),
+          password: values.password,
+          role: values.role
+        }),
+      "Registration successful."
     );
-  }, [values]);
+  }, [submitRequest, values]);
 
-  const handleOtpRegister = useCallback(() => {
+  const handleOtpRegister = useCallback(async () => {
     const nextErrors = validateRegisterOtp(values);
     setErrors(nextErrors);
 
@@ -74,17 +125,29 @@ export default function RegisterScreen({ initialRole = DEFAULT_AUTH_ROLE, onBack
     }
 
     if (!values.otpRequested) {
-      setValues((current) => ({ ...current, otpRequested: true }));
-      setStatusMessage(
-        "Connect the backend OTP endpoint before sending registration codes. No OTP was sent."
+      const wasOtpSent = await submitRequest(
+        () => sendRegisterOtp({ phone: values.phone.trim() }),
+        "OTP sent. Enter it below to create the account."
       );
+
+      if (wasOtpSent) {
+        setValues((current) => ({ ...current, otp: "", otpRequested: true }));
+      }
+
       return;
     }
 
-    setStatusMessage(
-      "Connect the backend OTP verification endpoint before creating phone-backed accounts."
+    await submitRequest(
+      () =>
+        verifyRegisterOtp({
+          fullName: values.fullName.trim(),
+          phone: values.phone.trim(),
+          role: values.role,
+          otp: values.otp.trim()
+        }),
+      "Account created with phone verification."
     );
-  }, [values]);
+  }, [submitRequest, values]);
 
   return (
     <AuthShell
@@ -107,6 +170,10 @@ export default function RegisterScreen({ initialRole = DEFAULT_AUTH_ROLE, onBack
         activeMethod={activeMethod}
         methods={authMethodOptions}
         onChange={(method) => {
+          if (isSubmitting) {
+            return;
+          }
+
           setActiveMethod(method);
           clearFeedback();
         }}
@@ -123,6 +190,7 @@ export default function RegisterScreen({ initialRole = DEFAULT_AUTH_ROLE, onBack
             placeholder="Your legal name"
             textContentType="name"
             value={values.fullName}
+            editable={!isSubmitting}
           />
           <AuthTextField
             autoComplete="email"
@@ -134,6 +202,7 @@ export default function RegisterScreen({ initialRole = DEFAULT_AUTH_ROLE, onBack
             placeholder="name@example.com"
             textContentType="emailAddress"
             value={values.email}
+            editable={!isSubmitting}
           />
           <AuthTextField
             autoComplete="tel"
@@ -145,6 +214,7 @@ export default function RegisterScreen({ initialRole = DEFAULT_AUTH_ROLE, onBack
             placeholder="+91 98765 43210"
             textContentType="telephoneNumber"
             value={values.phone}
+            editable={!isSubmitting}
           />
           <PasswordField
             autoComplete="new-password"
@@ -154,6 +224,7 @@ export default function RegisterScreen({ initialRole = DEFAULT_AUTH_ROLE, onBack
             placeholder="Minimum 10 characters"
             textContentType="newPassword"
             value={values.password}
+            editable={!isSubmitting}
           />
           <PasswordField
             autoComplete="new-password"
@@ -163,18 +234,29 @@ export default function RegisterScreen({ initialRole = DEFAULT_AUTH_ROLE, onBack
             placeholder="Repeat password"
             textContentType="newPassword"
             value={values.confirmPassword}
+            editable={!isSubmitting}
           />
           <RoleSelector
             error={errors.role}
-            onChange={(role) => updateField("role", role)}
+            onChange={(role) => {
+              if (!isSubmitting) {
+                updateField("role", role);
+              }
+            }}
             value={values.role}
           />
           <TermsToggle
             checked={values.acceptTerms}
             error={errors.acceptTerms}
-            onPress={() => updateField("acceptTerms", !values.acceptTerms)}
+            onPress={() => {
+              if (!isSubmitting) {
+                updateField("acceptTerms", !values.acceptTerms);
+              }
+            }}
           />
-          <SubmitButton onPress={handleEmailRegister}>Create account</SubmitButton>
+          <SubmitButton disabled={isSubmitting} onPress={handleEmailRegister}>
+            {isSubmitting ? "Creating account..." : "Create account"}
+          </SubmitButton>
         </View>
       ) : (
         <View style={styles.formGroup}>
@@ -187,6 +269,7 @@ export default function RegisterScreen({ initialRole = DEFAULT_AUTH_ROLE, onBack
             placeholder="Your legal name"
             textContentType="name"
             value={values.fullName}
+            editable={!isSubmitting}
           />
           <AuthTextField
             autoComplete="tel"
@@ -198,10 +281,15 @@ export default function RegisterScreen({ initialRole = DEFAULT_AUTH_ROLE, onBack
             placeholder="+91 98765 43210"
             textContentType="telephoneNumber"
             value={values.phone}
+            editable={!isSubmitting && !values.otpRequested}
           />
           <RoleSelector
             error={errors.role}
-            onChange={(role) => updateField("role", role)}
+            onChange={(role) => {
+              if (!isSubmitting) {
+                updateField("role", role);
+              }
+            }}
             value={values.role}
           />
           {values.otpRequested ? (
@@ -216,21 +304,30 @@ export default function RegisterScreen({ initialRole = DEFAULT_AUTH_ROLE, onBack
               placeholder="Enter OTP"
               textContentType="oneTimeCode"
               value={values.otp}
+              editable={!isSubmitting}
             />
           ) : null}
           <TermsToggle
             checked={values.acceptTerms}
             error={errors.acceptTerms}
-            onPress={() => updateField("acceptTerms", !values.acceptTerms)}
+            onPress={() => {
+              if (!isSubmitting) {
+                updateField("acceptTerms", !values.acceptTerms);
+              }
+            }}
           />
-          <SubmitButton onPress={handleOtpRegister}>
-            {values.otpRequested ? "Verify and create account" : "Send OTP"}
+          <SubmitButton disabled={isSubmitting} onPress={handleOtpRegister}>
+            {isSubmitting
+              ? "Please wait..."
+              : values.otpRequested
+                ? "Verify and create account"
+                : "Send OTP"}
           </SubmitButton>
         </View>
       )}
 
       <SocialAuthSection />
-      <AuthNotice>{statusMessage}</AuthNotice>
+      <AuthNotice tone={statusTone}>{statusMessage}</AuthNotice>
     </AuthShell>
   );
 }
@@ -288,9 +385,15 @@ function DisabledSocialButton({ label }) {
   );
 }
 
-function SubmitButton({ children, onPress }) {
+function SubmitButton({ children, disabled = false, onPress }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.submitButton}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={[styles.submitButton, disabled ? styles.submitButtonDisabled : null]}
+    >
       <Text style={styles.submitText}>{children}</Text>
     </Pressable>
   );
@@ -308,6 +411,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.emerald,
     paddingHorizontal: 20,
     paddingVertical: 14
+  },
+  submitButtonDisabled: {
+    opacity: 0.7
   },
   submitText: {
     color: colors.background,
