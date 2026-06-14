@@ -4,6 +4,8 @@ Expo React Native application for GoldWallah, written with JavaScript and `.jsx`
 
 This repository contains the cross-platform app frontend. Backend services should continue to come from the existing GoldWallah web/backend project; do not place backend secrets, database URLs, payment credentials, admin credentials, KYC storage keys, or private API tokens in this client repository.
 
+The project uses the ES6+ module system. App code should use `import` and `export`; do not add CommonJS `require()` or `module.exports` modules.
+
 ## Requirements
 
 - Node.js 20 or newer
