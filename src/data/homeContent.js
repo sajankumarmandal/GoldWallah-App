@@ -1,38 +1,39 @@
-export const trustItems = [
+export const trustHighlights = [
   {
-    label: "Verified jewellers",
-    detail: "Private bids are restricted to approved business accounts."
+    title: "Verified jewellers",
+    detail: "Business-reviewed jewellers before marketplace access."
   },
   {
-    label: "Seller-first privacy",
-    detail: "KYC and ownership documents stay behind authenticated access."
+    title: "Seller KYC",
+    detail: "Identity checks before active gold listings."
   },
   {
-    label: "Auditable offers",
-    detail: "Every bid path is designed for traceability and dispute review."
+    title: "Private bids",
+    detail: "Jewellers do not see competing bid amounts."
   }
 ];
 
-export const processSteps = [
-  {
-    number: "01",
-    title: "List securely",
-    body: "Add gold details only after authenticated seller onboarding and document controls are connected."
-  },
-  {
-    number: "02",
-    title: "Receive private bids",
-    body: "Verified jewellers compete privately without exposing sensitive seller data."
-  },
-  {
-    number: "03",
-    title: "Close with confidence",
-    body: "Final acceptance, commission, and payout flows should be handled by locked backend APIs."
-  }
+export const marketRates = [
+  { purity: "22K", value: "INR 7,191" },
+  { purity: "20K", value: "INR 6,539" },
+  { purity: "18K", value: "INR 5,888" }
 ];
 
-export const metrics = [
-  { value: "24K", label: "gold category ready" },
-  { value: "RBAC", label: "access model planned" },
-  { value: "KYC", label: "privacy-first flow" }
+export const openingStats = [
+  { value: "500+", label: "jewellers" },
+  { value: "INR 2.4Cr", label: "gold transacted" },
+  { value: "100%", label: "KYC verified" }
+];
+
+export const journeyCards = [
+  {
+    badge: "Seller flow",
+    title: "List gold after verification",
+    body: "Add purity, weight, photos, and location only after seller checks are approved."
+  },
+  {
+    badge: "Jeweller flow",
+    title: "Bid on nearby listings",
+    body: "Verified jewellers discover local opportunities and place private offers."
+  }
 ];

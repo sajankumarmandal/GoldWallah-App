@@ -11,111 +11,154 @@ import {
   View
 } from "react-native";
 
-import heroImage from "../assets/goldwallah-marketplace-hero.png";
+import heroImage from "../assets/goldwallah-web-hero.jpg";
+import logoImage from "../assets/goldwallah-logo.png";
 import ActionButton from "../components/ActionButton.jsx";
-import InfoCard from "../components/InfoCard.jsx";
-import MetricPill from "../components/MetricPill.jsx";
-import TrustItem from "../components/TrustItem.jsx";
-import { metrics, processSteps, trustItems } from "../data/homeContent";
+import { journeyCards, marketRates, openingStats, trustHighlights } from "../data/homeContent";
 import { colors } from "../theme/colors";
 
-const protectedFlowMessage =
-  "Connect authenticated backend APIs before collecting KYC, bids, payments, or seller documents.";
+const unavailableFlowMessage =
+  "Secure onboarding must connect to the authenticated GoldWallah backend before KYC, listings, bids, or jeweller verification are enabled.";
 
 export default function HomeScreen() {
   const { width } = useWindowDimensions();
-  const isWide = width >= 820;
-  const isNarrow = width < 430;
+  const isWide = width >= 900;
+  const isCompact = width < 430;
 
   const showProtectedFlowNotice = useCallback(() => {
     if (Platform.OS === "web" && typeof window !== "undefined") {
-      window.alert(protectedFlowMessage);
+      window.alert(unavailableFlowMessage);
       return;
     }
 
-    Alert.alert("Protected flow required", protectedFlowMessage);
+    Alert.alert("Protected flow required", unavailableFlowMessage);
   }, []);
 
   const layout = useMemo(
     () => ({
       content: [styles.content, isWide && styles.contentWide],
-      nav: [styles.nav, isNarrow && styles.navNarrow],
+      header: [styles.header, isCompact && styles.headerCompact],
       hero: [styles.hero, isWide && styles.heroWide],
       heroCopy: [styles.heroCopy, isWide && styles.heroCopyWide],
       actions: [styles.actions, isWide && styles.actionsWide],
-      heroImage: [styles.heroImage, isWide && styles.heroImageWide],
-      cards: [styles.cards, isWide && styles.cardsWide],
-      cardShell: [styles.cardShell, isWide && styles.cardShellWide]
+      visualPanel: [styles.visualPanel, isWide && styles.visualPanelWide],
+      stats: [styles.stats, isCompact && styles.statsCompact],
+      trustGrid: [styles.trustGrid, isWide && styles.trustGridWide],
+      journeyGrid: [styles.journeyGrid, isWide && styles.journeyGridWide]
     }),
-    [isNarrow, isWide]
+    [isCompact, isWide]
   );
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={layout.content} showsVerticalScrollIndicator={false}>
-        <View style={layout.nav}>
-          <View>
-            <Text style={styles.brand}>GoldWallah</Text>
-            <Text style={styles.brandSubline}>Private gold marketplace</Text>
+        <View style={layout.header}>
+          <View style={styles.brandLockup}>
+            <Image
+              accessibilityIgnoresInvertColors
+              accessibilityLabel="GoldWallah logo"
+              source={logoImage}
+              style={styles.logo}
+            />
+            <View>
+              <Text style={styles.brand}>GoldWallah</Text>
+              <Text style={styles.brandSubline}>Private gold marketplace</Text>
+            </View>
           </View>
-          <View style={styles.statusPill}>
-            <Text style={styles.statusText}>Secure by design</Text>
+
+          <View style={styles.headerPill}>
+            <Text style={styles.headerPillText}>KYC first</Text>
           </View>
         </View>
 
         <View style={layout.hero}>
           <View style={layout.heroCopy}>
-            <Text style={styles.eyebrow}>Verified jeweller bidding</Text>
-            <Text style={styles.heading}>Sell gold with privacy, control, and verified bids.</Text>
-            <Text style={styles.lede}>
-              GoldWallah helps sellers list gold securely while approved jewellers compete through
-              private, auditable offers.
+            <Text style={styles.eyebrow}>Old gold, new value</Text>
+            <Text style={styles.heading}>
+              Sell your old gold to verified jewellers, at the fairest price.
             </Text>
+            <Text style={styles.lede}>
+              List jewellery after verification, receive private offers from nearby jewellers, and
+              compare bids with market-rate context before moving ahead.
+            </Text>
+
             <View style={layout.actions}>
-              <ActionButton onPress={showProtectedFlowNotice}>Start seller onboarding</ActionButton>
+              <ActionButton onPress={showProtectedFlowNotice}>Sell your gold</ActionButton>
               <ActionButton variant="secondary" onPress={showProtectedFlowNotice}>
-                Jeweller access
+                Join as jeweller
               </ActionButton>
+            </View>
+
+            <View style={layout.stats}>
+              {openingStats.map((item) => (
+                <View key={item.label} style={styles.statItem}>
+                  <Text style={styles.statValue}>{item.value}</Text>
+                  <Text style={styles.statLabel}>{item.label}</Text>
+                </View>
+              ))}
             </View>
           </View>
 
-          <Image accessibilityIgnoresInvertColors source={heroImage} style={layout.heroImage} />
-        </View>
-
-        <View style={styles.metrics}>
-          {metrics.map((metric) => (
-            <MetricPill key={metric.label} value={metric.value} label={metric.label} />
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Trust controls expected from day one</Text>
-          <View style={styles.trustList}>
-            {trustItems.map((item) => (
-              <TrustItem key={item.label} label={item.label} detail={item.detail} />
-            ))}
+          <View style={layout.visualPanel}>
+            <Image accessibilityIgnoresInvertColors source={heroImage} style={styles.heroImage} />
+            <View style={styles.imageCaption}>
+              <Text style={styles.imageCaptionEyebrow}>From heirloom</Text>
+              <Text style={styles.imageCaptionTitle}>to fair offer</Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Marketplace flow</Text>
-          <View style={layout.cards}>
-            {processSteps.map((step) => (
-              <View key={step.number} style={layout.cardShell}>
-                <InfoCard eyebrow={step.number} title={step.title} body={step.body} />
+        <View style={styles.ratePanel}>
+          <View style={styles.rateHeader}>
+            <View>
+              <Text style={styles.rateEyebrow}>24K reference · INR / gram</Text>
+              <Text style={styles.rateValue}>INR 7,850</Text>
+            </View>
+            <View style={styles.rateBadge}>
+              <Text style={styles.rateBadgeText}>Indicative</Text>
+            </View>
+          </View>
+
+          <View style={styles.rateGrid}>
+            {marketRates.map((rate) => (
+              <View key={rate.purity} style={styles.rateTile}>
+                <Text style={styles.ratePurity}>{rate.purity}</Text>
+                <Text style={styles.rateTileValue}>{rate.value}</Text>
               </View>
             ))}
           </View>
+
+          <Text style={styles.rateNote}>
+            Market rates are context only. Final offers depend on purity, weight, condition, and
+            verified jeweller bids.
+          </Text>
         </View>
 
-        <View style={styles.securityNote}>
-          <Text style={styles.securityTitle}>Production security baseline</Text>
-          <Text style={styles.securityBody}>
-            This app shell contains no embedded secrets and does not persist sensitive tokens on
-            device storage. KYC, bidding, commission, and payout features should only be enabled
-            after authenticated APIs, RBAC, rate limits, audit logs, and private document storage are
-            implemented server-side.
-          </Text>
+        <View style={layout.trustGrid}>
+          {trustHighlights.map((item) => (
+            <View key={item.title} style={styles.trustCard}>
+              <View style={styles.trustMark}>
+                <Text style={styles.trustMarkText}>GW</Text>
+              </View>
+              <Text style={styles.trustTitle}>{item.title}</Text>
+              <Text style={styles.trustDetail}>{item.detail}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionEyebrow}>Two verified journeys</Text>
+          <Text style={styles.sectionTitle}>Start with the right path.</Text>
+        </View>
+
+        <View style={layout.journeyGrid}>
+          {journeyCards.map((item) => (
+            <View key={item.badge} style={styles.journeyCard}>
+              <Text style={styles.journeyBadge}>{item.badge}</Text>
+              <Text style={styles.journeyTitle}>{item.title}</Text>
+              <Text style={styles.journeyBody}>{item.body}</Text>
+            </View>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -130,28 +173,44 @@ const styles = StyleSheet.create({
   content: {
     width: "100%",
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === "android" ? 36 : 12,
-    paddingBottom: 36,
-    gap: 24
+    paddingTop: Platform.OS === "android" ? 30 : 12,
+    paddingBottom: 34,
+    gap: 22
   },
   contentWide: {
     maxWidth: 1180,
     alignSelf: "center",
-    paddingHorizontal: 32
+    paddingHorizontal: 32,
+    paddingTop: 28
   },
-  nav: {
+  header: {
+    minHeight: 62,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: 16
   },
-  navNarrow: {
+  headerCompact: {
     alignItems: "flex-start",
-    flexDirection: "column"
+    flexDirection: "column",
+    gap: 12
+  },
+  brandLockup: {
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12
+  },
+  logo: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 1,
+    borderColor: colors.border
   },
   brand: {
     color: colors.emerald,
-    fontSize: 24,
+    fontSize: 25,
     fontWeight: "900"
   },
   brandSubline: {
@@ -159,119 +218,273 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2
   },
-  statusPill: {
+  headerPill: {
     borderRadius: 999,
     backgroundColor: colors.goldSoft,
-    paddingHorizontal: 12,
-    paddingVertical: 8
+    paddingHorizontal: 14,
+    paddingVertical: 9
   },
-  statusText: {
+  headerPillText: {
     color: colors.emerald,
     fontSize: 12,
-    fontWeight: "800"
+    fontWeight: "900"
   },
   hero: {
-    borderRadius: 8,
-    overflow: "hidden",
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border
+    gap: 20
   },
   heroWide: {
-    minHeight: 510,
+    minHeight: 560,
     flexDirection: "row",
-    alignItems: "stretch"
+    alignItems: "center",
+    gap: 34
   },
   heroCopy: {
-    padding: 22,
-    gap: 14
+    gap: 16
   },
   heroCopyWide: {
-    flex: 0.95,
-    justifyContent: "center",
-    padding: 44
+    flex: 1.04,
+    paddingRight: 18
   },
   eyebrow: {
-    color: colors.gold,
+    color: colors.copper,
     fontSize: 12,
     fontWeight: "900",
     textTransform: "uppercase"
   },
   heading: {
-    color: colors.ink,
-    fontSize: 33,
-    lineHeight: 39,
+    color: colors.emerald,
+    fontSize: 38,
+    lineHeight: 44,
     fontWeight: "900"
   },
   lede: {
+    maxWidth: 680,
     color: colors.inkMuted,
     fontSize: 16,
-    lineHeight: 24
+    lineHeight: 25
   },
   actions: {
-    gap: 10,
+    gap: 12,
     marginTop: 4
   },
   actionsWide: {
     flexDirection: "row",
     alignItems: "center"
   },
+  stats: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 14,
+    marginTop: 8
+  },
+  statsCompact: {
+    gap: 10
+  },
+  statItem: {
+    minWidth: 112,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
+    paddingLeft: 14
+  },
+  statValue: {
+    color: colors.emerald,
+    fontSize: 21,
+    fontWeight: "900"
+  },
+  statLabel: {
+    color: colors.inkMuted,
+    fontSize: 13,
+    marginTop: 3
+  },
+  visualPanel: {
+    height: 430,
+    overflow: "hidden",
+    borderRadius: 28,
+    backgroundColor: colors.emerald,
+    borderWidth: 1,
+    borderColor: colors.border
+  },
+  visualPanelWide: {
+    flex: 0.92,
+    height: 540
+  },
   heroImage: {
     width: "100%",
-    height: 250,
+    height: "100%",
     resizeMode: "cover"
   },
-  heroImageWide: {
-    flex: 1.05,
-    width: 0,
-    height: "100%"
+  imageCaption: {
+    position: "absolute",
+    left: 22,
+    right: 22,
+    bottom: 22,
+    borderRadius: 22,
+    backgroundColor: "rgba(26, 54, 45, 0.74)",
+    padding: 18
   },
-  metrics: {
+  imageCaptionEyebrow: {
+    color: "rgba(253, 252, 249, 0.78)",
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase"
+  },
+  imageCaptionTitle: {
+    color: colors.background,
+    fontSize: 27,
+    fontWeight: "800",
+    marginTop: 4
+  },
+  ratePanel: {
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: 20,
+    gap: 18
+  },
+  rateHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 16
+  },
+  rateEyebrow: {
+    color: colors.inkMuted,
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase"
+  },
+  rateValue: {
+    color: colors.emerald,
+    fontSize: 36,
+    fontWeight: "900",
+    marginTop: 8
+  },
+  rateBadge: {
+    borderRadius: 999,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  rateBadgeText: {
+    color: colors.inkMuted,
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  rateGrid: {
     flexDirection: "row",
     gap: 10,
     flexWrap: "wrap"
   },
-  section: {
-    gap: 14
-  },
-  sectionTitle: {
-    color: colors.ink,
-    fontSize: 21,
-    fontWeight: "900"
-  },
-  trustList: {
-    borderRadius: 8,
-    backgroundColor: colors.surface,
+  rateTile: {
+    flex: 1,
+    minWidth: 96,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 18,
-    gap: 18
+    backgroundColor: colors.background,
+    padding: 14,
+    gap: 6
   },
-  cards: {
+  ratePurity: {
+    color: colors.inkMuted,
+    fontSize: 10,
+    fontWeight: "900"
+  },
+  rateTileValue: {
+    color: colors.emerald,
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  rateNote: {
+    color: colors.inkMuted,
+    fontSize: 13,
+    lineHeight: 20
+  },
+  trustGrid: {
     gap: 12
   },
-  cardsWide: {
+  trustGridWide: {
     flexDirection: "row"
   },
-  cardShell: {
-    width: "100%"
-  },
-  cardShellWide: {
-    flex: 1
-  },
-  securityNote: {
-    borderRadius: 8,
-    backgroundColor: colors.emerald,
+  trustCard: {
+    flex: 1,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     padding: 18,
-    gap: 8
+    gap: 10
   },
-  securityTitle: {
-    color: colors.goldSoft,
+  trustMark: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.goldSoft
+  },
+  trustMarkText: {
+    color: colors.emerald,
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  trustTitle: {
+    color: colors.emerald,
     fontSize: 17,
     fontWeight: "900"
   },
-  securityBody: {
-    color: "#f6f0e4",
+  trustDetail: {
+    color: colors.inkMuted,
+    fontSize: 13,
+    lineHeight: 20
+  },
+  sectionHeader: {
+    gap: 8,
+    marginTop: 4
+  },
+  sectionEyebrow: {
+    color: colors.copper,
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase"
+  },
+  sectionTitle: {
+    color: colors.emerald,
+    fontSize: 25,
+    fontWeight: "900"
+  },
+  journeyGrid: {
+    gap: 12
+  },
+  journeyGridWide: {
+    flexDirection: "row"
+  },
+  journeyCard: {
+    flex: 1,
+    borderRadius: 26,
+    backgroundColor: colors.emerald,
+    padding: 20,
+    gap: 10
+  },
+  journeyBadge: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    backgroundColor: "rgba(243, 228, 191, 0.18)",
+    color: colors.goldSoft,
+    fontSize: 11,
+    fontWeight: "900",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    textTransform: "uppercase"
+  },
+  journeyTitle: {
+    color: colors.background,
+    fontSize: 19,
+    fontWeight: "900"
+  },
+  journeyBody: {
+    color: "#e7efe9",
     fontSize: 14,
     lineHeight: 21
   }
