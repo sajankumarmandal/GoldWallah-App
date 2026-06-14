@@ -24,11 +24,12 @@ export default function ActionButton({ children, onPress, variant = "primary", d
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 52,
-    borderRadius: 8,
+    minHeight: 54,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 18
+    paddingHorizontal: 22,
+    paddingVertical: 14
   },
   primary: {
     backgroundColor: colors.emerald
@@ -36,7 +37,7 @@ const styles = StyleSheet.create({
   secondary: {
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border
+    borderColor: colors.emerald
   },
   disabled: {
     opacity: 0.48
@@ -45,9 +46,9 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }]
   },
   label: {
-    color: colors.surface,
+    color: colors.background,
     fontSize: 15,
-    fontWeight: "700"
+    fontWeight: "800"
   },
   secondaryLabel: {
     color: colors.emerald
