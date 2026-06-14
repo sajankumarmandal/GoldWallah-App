@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "GoldWallah App",
+    "slug": "goldwallah-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "goldwallah",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "assetBundlePatterns": [
+      "src/assets/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.goldwallah.app"
+    },
+    "android": {
+      "package": "com.goldwallah.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f2f24"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "name": "GoldWallah App",
+      "shortName": "GoldWallah"
+    },
+    "extra": {
+      "securityBaseline": "No secrets or backend credentials are bundled in the client."
+    }
+  }
+}
